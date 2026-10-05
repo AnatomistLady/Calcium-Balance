@@ -3,1351 +3,1007 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Calcium Homeostasis: In-Vivo Physiological Simulation & Skeletal Outcome</title>
-  <!-- Tailwind CSS & Font Awesome & Google Fonts -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700;800&display=swap" rel="stylesheet">
-
+  <title>Calcium Homeostasis & Cellular Bone Remodeling Simulation</title>
   <style>
+    :root {
+      --bg-dark: #090d16;
+      --card-bg: #111827;
+      --card-border: #1e293b;
+      --pth-color: #f59e0b;
+      --ct-color: #10b981;
+      --ca-color: #38bdf8;
+      --blast-color: #0ea5e9;
+      --clast-color: #ea580c;
+      --cyte-color: #a855f7;
+      --bone-color: #e2e8f0;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      background: #070b13;
-      color: #e2e8f0;
-      overflow-x: hidden;
+      background: var(--bg-dark);
+      color: var(--text-main);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      min-height: 100vh;
     }
-    .font-mono {
-      font-family: 'JetBrains Mono', monospace;
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 14px 24px;
     }
-    /* Pulse glow effects */
-    @keyframes pulse-subtle {
-      0%, 100% { opacity: 0.9; transform: scale(1); }
-      50% { opacity: 1; transform: scale(1.02); }
+
+    .title-group h1 {
+      font-size: 1.35rem;
+      font-weight: 700;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
-    .animate-pulse-subtle {
-      animation: pulse-subtle 3s infinite ease-in-out;
+
+    .title-group p {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      margin-top: 3px;
     }
-    @keyframes flux-glow {
-      0%, 100% { filter: drop-shadow(0 0 4px rgba(245, 158, 11, 0.4)); }
-      50% { filter: drop-shadow(0 0 12px rgba(245, 158, 11, 0.9)); }
-    }
-    .animate-flux {
-      animation: flux-glow 2s infinite ease-in-out;
-    }
-    /* Custom scrollbar */
-    ::-webkit-scrollbar {
-      width: 6px;
-      height: 6px;
-    }
-    ::-webkit-scrollbar-track {
+
+    /* Simulation Legend */
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
       background: #0f172a;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 16px;
+      font-size: 0.8rem;
+      align-items: center;
     }
-    ::-webkit-scrollbar-thumb {
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      display: inline-block;
+    }
+
+    /* Main Grid Layout */
+    .main-stage {
+      display: grid;
+      grid-template-columns: 1fr 340px 320px;
+      gap: 16px;
+      flex: 1;
+    }
+
+    @media (max-width: 1400px) {
+      .main-stage {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .canvas-container {
+      position: relative;
+      background: radial-gradient(circle at 50% 50%, #131b2e 0%, #0b0f19 100%);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    canvas {
+      width: 100%;
+      height: 580px;
+      display: block;
+    }
+
+    .canvas-overlay-controls {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    .btn-ctrl {
+      background: rgba(30, 41, 59, 0.85);
+      border: 1px solid #334155;
+      color: var(--text-main);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+    }
+
+    .btn-ctrl:hover {
       background: #334155;
-      border-radius: 3px;
     }
-    ::-webkit-scrollbar-thumb:hover {
-      background: #475569;
+
+    /* Skeletal Outcome Panel */
+    .side-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .panel-heading {
+      font-size: 0.95rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #94a3b8;
+      border-bottom: 1px solid #1e293b;
+      padding-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .flux-badge {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      padding: 12px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 700;
+      font-size: 0.95rem;
+      transition: all 0.3s;
+    }
+
+    .gauge-wrapper {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .gauge-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .gauge-bar-track {
+      height: 8px;
+      background: #1e293b;
+      border-radius: 4px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .gauge-bar-fill {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 50%;
+      left: 50%;
+      background: #38bdf8;
+      transition: all 0.2s ease;
+    }
+
+    .cellular-status-box {
+      background: #0b1329;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      font-size: 0.8rem;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .cell-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .tag {
+      font-size: 0.72rem;
+      padding: 2px 7px;
+      border-radius: 4px;
+      font-weight: 600;
+    }
+
+    /* Scenario & Telemetry Column */
+    .controls-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: 14px;
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .scenario-card {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .scenario-card:hover {
+      border-color: #3b82f6;
+      background: #131d36;
+    }
+
+    .scenario-card.active {
+      border-color: #38bdf8;
+      box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+    }
+
+    .scenario-card .hdr {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.85rem;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .scenario-card .desc {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      line-height: 1.35;
+    }
+
+    .slider-box {
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 8px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    input[type=range] {
+      width: 100%;
+      accent-color: #38bdf8;
+      cursor: pointer;
     }
   </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between">
+<body>
 
-  <header class="border-b border-slate-800/90 bg-slate-900/95 backdrop-blur sticky top-0 z-50 px-5 md:px-8 py-3.5 flex flex-wrap items-center justify-between gap-4">
-    <div class="flex items-center gap-3.5">
-      <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-sky-500 via-indigo-500 to-amber-500 flex items-center justify-center shadow-lg shadow-sky-500/20">
-        <i class="fa-solid fa-bone text-white text-xl"></i>
-      </div>
-      <div>
-        <h1 class="text-lg md:text-xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          Calcium Homeostasis Engine
-          <span class="text-[11px] px-2.5 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-800/60 font-semibold font-mono">In-Vivo Cellular Loop</span>
-        </h1>
-        <p class="text-xs text-slate-400">Dynamic Endocrine Glands, Blood Circulation, and Skeletal Remodeling</p>
-      </div>
+  <header>
+    <div class="title-group">
+      <h1>Dynamic Calcium Homeostasis & Bone Cellular Remodeling</h1>
+      <p>Microscopic bone coupling: Osteoblast-to-Osteocyte entrapment vs. Osteoclast lacunar acid dissolution</p>
     </div>
-
-    <!-- Live Serum Gauge Header Readout -->
-    <div class="flex items-center gap-5 bg-slate-950/90 px-4 py-2 rounded-xl border border-slate-800">
-      <div class="text-right">
-        <div class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Blood Ionized [Ca²⁺]</div>
-        <div class="flex items-baseline gap-1.5 justify-end">
-          <span id="header-calcium-val" class="text-2xl font-black font-mono text-sky-400">9.5</span>
-          <span class="text-xs text-slate-400 font-mono">mg/dL</span>
-        </div>
-      </div>
-      <div class="h-8 w-px bg-slate-800"></div>
-      <div>
-        <div class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Physiological Equilibrium</div>
-        <span id="header-status-badge" class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60">
-          <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          Normocalcemia (8.5–10.5 mg/dL)
-        </span>
-      </div>
+    <div style="font-size: 0.85rem; color: #94a3b8;">
+      Active Blood Ca²⁺: <strong id="header-ca-val" style="color: #38bdf8; font-size: 1.05rem;">9.5 mg/dL</strong>
     </div>
   </header>
 
-  <div class="bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border-b border-slate-800/80 px-5 md:px-8 py-2.5 text-xs text-slate-300">
-    <div class="max-w-[1560px] mx-auto flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-2">
-        <span class="w-6 h-6 rounded-md bg-sky-500/20 text-sky-400 flex items-center justify-center font-bold text-xs">
-          <i class="fa-solid fa-map"></i>
-        </span>
-        <span class="font-bold text-slate-200">How to Read This Simulation:</span>
-        <span class="hidden md:inline text-slate-400">Follow the molecular particles traveling through the 3 biological zones:</span>
-      </div>
-
-      <div class="flex flex-wrap items-center gap-3 font-mono text-[11px]">
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-amber-950/60 border border-amber-600/50 text-amber-300 font-bold">
-          <span class="w-2 h-2 rounded-full bg-amber-400 shadow-[0_0_6px_#f59e0b]"></span> Amber Particles = PTH
-        </span>
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-emerald-950/60 border border-emerald-600/50 text-emerald-300 font-bold">
-          <span class="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_6px_#10b981]"></span> Emerald Particles = Calcitonin
-        </span>
-        <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded bg-sky-950/60 border border-sky-600/50 text-sky-300 font-bold">
-          <span class="w-2 h-2 rounded-full bg-sky-400 shadow-[0_0_6px_#38bdf8]"></span> Glowing White/Blue = Free Ca²⁺
-        </span>
-        <button id="btn-toggle-guide" class="text-sky-400 hover:text-sky-300 underline font-sans ml-2 text-xs font-semibold cursor-pointer">
-          <i class="fa-solid fa-circle-question"></i> Detailed Guide
-        </button>
-      </div>
-    </div>
-
-    <!-- Collapsible Detailed Explanation Drawer -->
-    <div id="guide-drawer" class="hidden mt-3 pt-3 border-t border-slate-800 text-xs text-slate-300 leading-relaxed grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-        <h4 class="font-bold text-amber-400 flex items-center gap-1.5 mb-1">
-          <i class="fa-solid fa-1"></i> Zone 1: Glandular Sensors
-        </h4>
-        <p class="text-slate-400 text-[11px]">
-          <b>Parathyroid Chief Cells</b> release PTH when calcium drops. <b>Thyroid C-Cells</b> release Calcitonin when calcium is high. Both use CaSR (Calcium-Sensing Receptors) on their surface to sample the blood.
-        </p>
-      </div>
-      <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-        <h4 class="font-bold text-sky-400 flex items-center gap-1.5 mb-1">
-          <i class="fa-solid fa-2"></i> Zone 2: Vascular Transport
-        </h4>
-        <p class="text-slate-400 text-[11px]">
-          Hormones flow through systemic capillaries. Ionized Ca²⁺ ions continually bounce between organs to supply nerves, myocardium, and skeletal muscles.
-        </p>
-      </div>
-      <div class="bg-slate-900/90 p-3 rounded-xl border border-slate-800">
-        <h4 class="font-bold text-indigo-400 flex items-center gap-1.5 mb-1">
-          <i class="fa-solid fa-3"></i> Zone 3: Skeletal Effectors & Outcome
-        </h4>
-        <p class="text-slate-400 text-[11px]">
-          <b>Osteoclasts</b> pump acid to dissolve hydroxyapatite (releasing Ca²⁺ into blood). <b>Osteoblasts</b> deposit new matrix. The Result column on the right tracks the systemic outcome!
-        </p>
-      </div>
-    </div>
+  <!-- Legend Bar -->
+  <div class="legend-bar">
+    <div class="legend-item"><span class="dot" style="background: var(--blast-color);"></span> <strong>Osteoblast</strong>: Bone-forming cell synthesizing osteoid</div>
+    <div class="legend-item"><span class="dot" style="background: var(--cyte-color);"></span> <strong>Osteocyte</strong>: Entrapped mature cell with dendritic canaliculi</div>
+    <div class="legend-item"><span class="dot" style="background: var(--clast-color);"></span> <strong>Osteoclast</strong>: Multi-nucleated acid resorber</div>
+    <div class="legend-item"><span class="dot" style="background: var(--pth-color);"></span> <strong>PTH</strong> (Parathyroid Hormone)</div>
+    <div class="legend-item"><span class="dot" style="background: var(--ct-color);"></span> <strong>Calcitonin</strong> (Thyroid C-Cell)</div>
+    <div class="legend-item"><span class="dot" style="background: var(--ca-color); box-shadow: 0 0 6px #38bdf8;"></span> <strong>Ionized Ca²⁺</strong></div>
   </div>
 
-  <main class="flex-grow p-4 md:p-6 max-w-[1580px] mx-auto w-full grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+  <div class="main-stage">
+    
+    <!-- Simulation Canvas -->
+    <div class="canvas-container">
+      <div class="canvas-overlay-controls">
+        <button class="btn-ctrl" id="btn-pause">Pause</button>
+        <button class="btn-ctrl" id="btn-reset">Reset</button>
+      </div>
+      <canvas id="simCanvas"></canvas>
+    </div>
 
-    <!-- Center Left: Simulation Canvas (7 Cols) -->
-    <div class="xl:col-span-7 flex flex-col gap-3">
-      
-      <!-- Canvas Card -->
-      <div class="relative bg-slate-950 rounded-2xl border border-slate-800/90 overflow-hidden shadow-2xl flex flex-col">
-        
-        <!-- Canvas Top Bar Controls -->
-        <div class="px-4 py-3 bg-slate-900/90 border-b border-slate-800/80 flex flex-wrap items-center justify-between gap-2 z-20">
-          <div class="flex items-center gap-2 text-xs">
-            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-bold text-slate-200">Interactive Physiological Organ Flow</span>
-            <span class="text-slate-500 font-mono text-[11px]">| Microscopic &amp; Tissue Level</span>
-          </div>
+    <!-- Circled Result & Skeletal Outcome Column -->
+    <div class="side-panel">
+      <div class="panel-heading">
+        <span>Skeletal Outcome</span>
+        <span style="font-size: 0.7rem; color: #38bdf8;">LIVE BIO-FLUX</span>
+      </div>
 
-          <!-- Playback Controls -->
-          <div class="flex items-center gap-2">
-            <button id="btn-toggle-play" class="h-8 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-white flex items-center gap-1.5 text-xs font-semibold transition" title="Play / Pause">
-              <i id="play-pause-icon" class="fa-solid fa-pause"></i>
-              <span id="play-pause-label">Pause</span>
-            </button>
-            <button id="btn-reset" class="h-8 px-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center text-xs transition" title="Reset to Equilibrium (9.5 mg/dL)">
-              <i class="fa-solid fa-arrow-rotate-left"></i>
-            </button>
-            <div class="h-4 w-px bg-slate-700"></div>
-            <button id="btn-speed" class="px-2.5 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-mono font-bold text-sky-400 transition" title="Toggle Speed">
-              1.0x
-            </button>
-          </div>
+      <!-- Real-Time Ion Flux Vector -->
+      <div class="flux-badge" id="fluxBadge" style="color: #38bdf8; border-color: #0284c7;">
+        <span id="fluxIcon">⇄</span>
+        <span id="fluxText">DYNAMIC EQUILIBRIUM</span>
+      </div>
+
+      <!-- Mineral Accretion / Demineralization Gauge -->
+      <div class="gauge-wrapper">
+        <div class="gauge-label">
+          <span>Demineralization</span>
+          <span id="netRateText">0.0 mg/hr</span>
+          <span>Accretion</span>
         </div>
-
-        <!-- The Canvas Rendering Surface -->
-        <div class="w-full relative bg-[#060a12]" style="height: 530px;">
-          <canvas id="bioCanvas" width="820" height="530" class="w-full h-full block cursor-crosshair"></canvas>
-          
-          <!-- Direct Canvas Region Footnotes -->
-          <div class="absolute bottom-2.5 left-3 right-3 flex justify-between items-center pointer-events-none text-[11px] font-mono">
-            <span class="bg-slate-900/85 backdrop-blur px-2.5 py-1 rounded border border-slate-700/60 text-slate-300">
-              Zone 1: Endocrine Glands
-            </span>
-            <span class="bg-slate-900/85 backdrop-blur px-2.5 py-1 rounded border border-slate-700/60 text-slate-300">
-              Zone 2: Bloodstream
-            </span>
-            <span class="bg-slate-900/85 backdrop-blur px-2.5 py-1 rounded border border-slate-700/60 text-slate-300">
-              Zone 3: Bone Matrix (99% Calcium)
-            </span>
-          </div>
+        <div class="gauge-bar-track">
+          <div class="gauge-bar-fill" id="gaugeFill"></div>
         </div>
       </div>
 
-      <!-- Live Clinical Mechanism Narrative Box -->
-      <div class="bg-slate-900/90 rounded-xl p-4 border border-slate-800 flex items-start gap-3.5">
-        <div id="narrative-icon-box" class="w-10 h-10 rounded-xl bg-sky-950 border border-sky-800/60 flex-shrink-0 flex items-center justify-center text-sky-400 text-base shadow-md">
-          <i id="narrative-icon" class="fa-solid fa-arrows-split-up-and-left"></i>
+      <!-- Cellular Remodeling Status -->
+      <div class="cellular-status-box">
+        <div style="font-weight: 700; color: #cbd5e1; border-bottom: 1px solid #1e293b; padding-bottom: 4px;">
+          Micro-Coupling Telemetry
         </div>
-        <div class="flex-grow">
-          <div class="flex items-center justify-between">
-            <h4 id="narrative-title" class="text-xs font-bold uppercase tracking-wider text-sky-400 font-mono">
-              DYNAMIC NEGATIVE FEEDBACK LOOP ACTIVE
-            </h4>
-            <span id="narrative-state-badge" class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">
-              Equilibrium
-            </span>
-          </div>
-          <p id="narrative-desc" class="text-xs md:text-sm text-slate-300 mt-1.5 leading-relaxed">
-            Blood ionized calcium is maintained precisely at the setpoint (9.5 mg/dL). CaSR receptors maintain a steady basal output of PTH. Bone creation and resorption remain in exact equilibrium.
-          </p>
+        <div class="cell-line">
+          <span>Active Osteoblasts:</span>
+          <span class="tag" style="background: #0369a1; color: #e0f2fe;" id="telemetryBlastCount">6 Active</span>
+        </div>
+        <div class="cell-line">
+          <span>Entrapped Osteocytes:</span>
+          <span class="tag" style="background: #6b21a8; color: #f3e8ff;" id="telemetryCyteCount">4 Entrapped</span>
+        </div>
+        <div class="cell-line">
+          <span>Osteoclast Activity:</span>
+          <span class="tag" style="background: #9a3412; color: #ffedd5;" id="telemetryClastStatus">Basal Pitting</span>
+        </div>
+        <div class="cell-line">
+          <span>Lacunar Acid pH:</span>
+          <span class="tag" style="background: #1e293b; color: #f87171;" id="telemetryLacunaPH">pH 6.8 (Neutral)</span>
+        </div>
+      </div>
+
+      <!-- Systemic Consequence -->
+      <div style="background: #0f172a; border: 1px solid #1e293b; border-radius: 8px; padding: 12px; font-size: 0.78rem;">
+        <div style="font-weight: 700; color: #f8fafc; margin-bottom: 5px;">Systemic Clinical State:</div>
+        <div id="systemicDesc" style="color: #94a3b8; line-height: 1.4;">
+          Normal ionized Ca²⁺ maintains resting membrane potentials; skeletal deposition matches resorption without net bone loss.
         </div>
       </div>
     </div>
 
-    <!-- Center Right: RESULT & OUTCOME PANEL (Circled Region on the Diagram) (2.5 Cols) -->
-    <div class="xl:col-span-2 flex flex-col gap-3">
-      
-      <!-- Primary Outcome Container -->
-      <div class="bg-gradient-to-b from-slate-900 via-slate-950 to-slate-900 rounded-2xl p-4 border-2 border-indigo-500/30 shadow-2xl relative flex flex-col gap-4">
-        
-        <!-- Header Tag -->
-        <div class="border-b border-slate-800/80 pb-2.5">
-          <div class="flex items-center gap-2">
-            <span class="w-3 h-3 rounded-full bg-indigo-500 animate-ping"></span>
-            <h3 class="font-extrabold text-xs text-white uppercase tracking-wider font-mono">
-              SKELETAL RESULT &amp; OUTCOME
-            </h3>
-          </div>
-          <p class="text-[11px] text-slate-400 mt-0.5">What happens in bone tissue as a direct result:</p>
+    <!-- Scenarios & Interactive Control Column -->
+    <div class="controls-panel">
+      <div class="panel-heading">Clinical Triggers</div>
+
+      <!-- Hypocalcemia -->
+      <div class="scenario-card" id="card-hypo" onclick="triggerScenario('hypo')">
+        <div class="hdr" style="color: #f59e0b;">
+          <span>Trigger Hypocalcemia</span>
+          <span>7.2 mg/dL</span>
         </div>
-
-        <!-- 1. Real-Time Directional Calcium Vector Card -->
-        <div class="bg-slate-950/80 rounded-xl p-3.5 border border-slate-800 flex flex-col gap-2">
-          <span class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">NET ION FLUX DIRECTION</span>
-          
-          <div id="vector-container" class="flex items-center justify-center gap-2 py-2 px-1 rounded-lg bg-slate-900/90 border border-slate-800">
-            <span id="vector-from" class="text-xs font-bold text-slate-300 font-mono">BONE</span>
-            <div class="flex items-center gap-1 text-slate-500">
-              <i id="vector-arrow-1" class="fa-solid fa-circle text-[7px] text-emerald-400"></i>
-              <i id="vector-arrow-2" class="fa-solid fa-arrow-right-arrow-left text-sm text-sky-400"></i>
-              <i id="vector-arrow-3" class="fa-solid fa-circle text-[7px] text-emerald-400"></i>
-            </div>
-            <span id="vector-to" class="text-xs font-bold text-slate-300 font-mono">BLOOD</span>
-          </div>
-
-          <div id="vector-desc" class="text-[11px] text-center font-medium text-slate-400 leading-snug">
-            Zero Net Exchange (Homeostatic Balance)
-          </div>
-        </div>
-
-        <!-- 2. Dynamic Bone Mineral Balance Bar Gauge -->
-        <div class="bg-slate-950/80 rounded-xl p-3.5 border border-slate-800 flex flex-col gap-2.5">
-          <div class="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-            <span>Skeletal Mineral Density</span>
-            <span id="mineral-rate-text" class="font-mono text-sky-400 font-bold">0.0 mg/h</span>
-          </div>
-
-          <!-- Dynamic Dual-Direction Bar -->
-          <div class="relative h-6 bg-slate-900 rounded-lg overflow-hidden border border-slate-700/80 p-0.5">
-            <!-- Center zero line -->
-            <div class="absolute left-1/2 top-0 bottom-0 w-0.5 bg-slate-500 z-10"></div>
-            
-            <!-- Resorption Fill (Moves Left from Center) -->
-            <div id="bar-resorb" class="absolute top-0.5 bottom-0.5 right-1/2 bg-gradient-to-l from-amber-500 to-rose-600 rounded-l transition-all duration-300" style="width: 0%;"></div>
-
-            <!-- Accretion Fill (Moves Right from Center) -->
-            <div id="bar-accrete" class="absolute top-0.5 bottom-0.5 left-1/2 bg-gradient-to-r from-emerald-500 to-teal-400 rounded-r transition-all duration-300" style="width: 0%;"></div>
-          </div>
-
-          <div class="flex justify-between text-[9px] font-mono font-semibold text-slate-400">
-            <span class="text-amber-400 flex items-center gap-1">
-              <i class="fa-solid fa-angles-left"></i> EROSION
-            </span>
-            <span class="text-slate-400">STABLE</span>
-            <span class="text-emerald-400 flex items-center gap-1">
-              DEPOSITION <i class="fa-solid fa-angles-right"></i>
-            </span>
-          </div>
-        </div>
-
-        <!-- 3. Immediate Skeletal Result Summary -->
-        <div id="bone-result-card" class="bg-slate-950/90 rounded-xl p-3.5 border border-slate-800 flex flex-col gap-2">
-          <div class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">TISSUE CONSEQUENCE</div>
-          <div id="bone-result-title" class="text-xs font-black text-slate-200">
-            Remodeling Equilibrium
-          </div>
-          <p id="bone-result-desc" class="text-[11px] text-slate-400 leading-relaxed">
-            Bone matrix density is conserved. Daily remodeling replaces microscopic stress fractures without sacrificing overall mineral volume.
-          </p>
-        </div>
-
-        <!-- 4. Systemic / Whole Body Clinical Protection Badge -->
-        <div id="systemic-impact-card" class="bg-gradient-to-br from-slate-900 to-slate-950 rounded-xl p-3.5 border border-slate-800 flex flex-col gap-1.5">
-          <div class="flex items-center gap-1.5 text-[10px] uppercase font-bold text-emerald-400">
-            <i class="fa-solid fa-heart-pulse"></i> Whole Body Impact
-          </div>
-          <div id="systemic-impact-text" class="text-[11px] text-slate-300 leading-snug">
-            Protects nerve action potentials, myocardial rhythmic contraction, and normal skeletal rigidity.
-          </div>
-        </div>
-
-      </div>
-
-    </div>
-
-    <!-- Far Right: Scenario Command Center & Molecular Telemetry (2.5 Cols) -->
-    <div class="xl:col-span-3 flex flex-col gap-4">
-      
-      <!-- Scenario Command Center -->
-      <div class="bg-slate-900/90 rounded-2xl p-4 md:p-5 border border-slate-800 shadow-xl flex flex-col gap-3.5">
-        <div class="flex items-center justify-between border-b border-slate-800/80 pb-2">
-          <h3 class="font-extrabold text-xs text-white uppercase tracking-wider flex items-center gap-2 font-mono">
-            <i class="fa-solid fa-flask-vial text-sky-400"></i> Trigger Scenarios
-          </h3>
-          <span class="text-[10px] text-slate-400 font-mono">Select State</span>
-        </div>
-
-        <!-- 3 Quick Action Trigger Buttons -->
-        <div class="grid grid-cols-1 gap-2.5">
-          <!-- Button 1: Hypocalcemia -->
-          <button id="btn-trigger-hypo" class="group relative overflow-hidden rounded-xl p-3 bg-gradient-to-r from-amber-950/60 to-slate-900 border border-amber-600/50 hover:border-amber-400 text-left transition-all hover:shadow-lg hover:shadow-amber-950/40">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-amber-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-arrow-trend-down"></i> Trigger Hypocalcemia
-              </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-900/70 text-amber-200 font-bold">7.2 mg/dL</span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-              Brake lifts → <b class="text-amber-300">PTH surges</b> → Osteoclasts dissolve bone to rescue serum levels.
-            </p>
-          </button>
-
-          <!-- Button 2: Normal Setpoint -->
-          <button id="btn-trigger-norm" class="group relative overflow-hidden rounded-xl p-3 bg-gradient-to-r from-slate-900 to-slate-950 border border-slate-700 hover:border-sky-400 text-left transition-all">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-200 flex items-center gap-1.5">
-                <i class="fa-solid fa-scale-balanced text-sky-400"></i> Restore Equilibrium
-              </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold">9.5 mg/dL</span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-              Equilibrium setpoint. Osteoblast accretion perfectly balances osteoclast breakdown.
-            </p>
-          </button>
-
-          <!-- Button 3: Hypercalcemia -->
-          <button id="btn-trigger-hyper" class="group relative overflow-hidden rounded-xl p-3 bg-gradient-to-r from-emerald-950/60 to-slate-900 border border-emerald-600/50 hover:border-emerald-400 text-left transition-all hover:shadow-lg hover:shadow-emerald-950/40">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-emerald-300 flex items-center gap-1.5">
-                <i class="fa-solid fa-arrow-trend-up"></i> Trigger Hypercalcemia
-              </span>
-              <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-900/70 text-emerald-200 font-bold">12.2 mg/dL</span>
-            </div>
-            <p class="text-[11px] text-slate-400 mt-1 leading-snug">
-              CaSR saturated → <b class="text-emerald-300">Calcitonin released</b> → Paralyzes osteoclasts, stores excess Ca²⁺.
-            </p>
-          </button>
-        </div>
-
-        <!-- Manual Calcium Level Slider -->
-        <div class="pt-2.5 border-t border-slate-800/80 flex flex-col gap-2">
-          <div class="flex justify-between items-center text-xs">
-            <span class="font-bold text-slate-300">Serum [Ca²⁺] Slider:</span>
-            <span id="slider-val" class="font-mono font-bold text-sky-400 text-sm">9.5 mg/dL</span>
-          </div>
-          <input id="ca-slider" type="range" min="6.0" max="14.0" step="0.1" value="9.5" class="w-full accent-sky-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
-          <div class="flex justify-between text-[10px] font-mono font-semibold">
-            <span class="text-amber-400">&lt;8.5 (Hypo)</span>
-            <span class="text-emerald-400">8.5–10.5 (Normal)</span>
-            <span class="text-purple-400">&gt;10.5 (Hyper)</span>
-          </div>
+        <div class="desc">
+          Low Ca²⁺ unbinds CaSR → Chief cells dump PTH → Osteoclasts seal with actin rings, pump H⁺ acid to dissolve matrix, releasing Ca²⁺ back to blood.
         </div>
       </div>
 
-      <!-- Real-Time Cellular & Receptor Telemetry -->
-      <div class="bg-slate-900/90 rounded-2xl p-4 md:p-5 border border-slate-800 shadow-xl flex flex-col gap-3">
-        <h3 class="font-extrabold text-xs text-white uppercase tracking-wider flex items-center gap-2 font-mono">
-          <i class="fa-solid fa-microchip text-indigo-400"></i> Molecular Feedback Telemetry
-        </h3>
-
-        <!-- CaSR Sensor State -->
-        <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between">
-          <div>
-            <div class="text-[10px] text-slate-400 font-semibold uppercase">CaSR Receptor Status</div>
-            <div id="telemetry-casr" class="text-xs font-bold text-slate-200 mt-0.5">Equilibrium Binding</div>
-          </div>
-          <div class="w-7 h-7 rounded-lg bg-sky-950 text-sky-400 flex items-center justify-center text-xs">
-            <i class="fa-solid fa-satellite-dish"></i>
-          </div>
+      <!-- Equilibrium -->
+      <div class="scenario-card active" id="card-eq" onclick="triggerScenario('eq')">
+        <div class="hdr" style="color: #38bdf8;">
+          <span>Restore Equilibrium</span>
+          <span>9.5 mg/dL</span>
         </div>
-
-        <!-- Hormone Secretion Outputs -->
-        <div class="grid grid-cols-2 gap-2">
-          <!-- PTH -->
-          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-semibold uppercase">PTH Output</div>
-            <div id="telemetry-pth" class="text-xs font-bold font-mono text-amber-400 mt-0.5">Basal (Normal)</div>
-            <div class="text-[9px] text-slate-500">Chief Cells</div>
-          </div>
-          <!-- Calcitonin -->
-          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-semibold uppercase">Calcitonin</div>
-            <div id="telemetry-calcitonin" class="text-xs font-bold font-mono text-emerald-400 mt-0.5">Quiescent</div>
-            <div class="text-[9px] text-slate-500">C-Cells</div>
-          </div>
+        <div class="desc">
+          Homeostatic setpoint (8.5–10.5 mg/dL). Balanced coupling: osteoblasts lay osteoid, engulfing themselves into mature osteocytes while basal remodeling occurs.
         </div>
+      </div>
 
-        <!-- Bone Cell Actions -->
-        <div class="grid grid-cols-2 gap-2">
-          <!-- Osteoclast -->
-          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-semibold uppercase">Osteoclasts</div>
-            <div id="telemetry-osteoclast" class="text-xs font-bold text-amber-400 mt-0.5">Basal Remodeling</div>
-            <div class="text-[9px] text-slate-500">Acid Secretion</div>
-          </div>
-          <!-- Osteoblast -->
-          <div class="bg-slate-950/80 p-2.5 rounded-xl border border-slate-800">
-            <div class="text-[10px] text-slate-400 font-semibold uppercase">Osteoblasts</div>
-            <div id="telemetry-osteoblast" class="text-xs font-bold text-sky-400 mt-0.5">Laying Matrix</div>
-            <div class="text-[9px] text-slate-500">Mineralization</div>
-          </div>
+      <!-- Hypercalcemia -->
+      <div class="scenario-card" id="card-hyper" onclick="triggerScenario('hyper')">
+        <div class="hdr" style="color: #10b981;">
+          <span>Trigger Hypercalcemia</span>
+          <span>12.5 mg/dL</span>
         </div>
+        <div class="desc">
+          High Ca²⁺ saturates CaSR → Thyroid C-cells secrete Calcitonin → Osteoclasts paralyze and retract ruffled borders; osteoblasts actively build matrix.
+        </div>
+      </div>
 
-        <!-- Auto-Homeostatic Loop Toggle -->
-        <div class="pt-2 border-t border-slate-800 flex items-center justify-between">
-          <div class="flex items-center gap-1.5 text-xs text-slate-300 font-semibold">
-            <i class="fa-solid fa-arrows-spin text-sky-400"></i>
-            <span>Physiological Feedback:</span>
-          </div>
-          <label class="relative inline-flex items-center cursor-pointer">
-            <input id="toggle-autoreg" type="checkbox" checked class="sr-only peer">
-            <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-sky-600"></div>
-          </label>
+      <!-- Manual Slider -->
+      <div class="slider-box">
+        <div style="display: flex; justify-content: space-between; font-size: 0.8rem;">
+          <span>Manual Blood [Ca²⁺]:</span>
+          <span id="slider-val" style="font-weight: 700; color: #38bdf8;">9.5 mg/dL</span>
+        </div>
+        <input type="range" id="caSlider" min="6.5" max="13.5" step="0.1" value="9.5">
+        <div style="display: flex; justify-content: space-between; font-size: 0.68rem; color: #64748b;">
+          <span>Hypo (&lt;8.5)</span>
+          <span>Normal (8.5 - 10.5)</span>
+          <span>Hyper (&gt;10.5)</span>
         </div>
       </div>
 
     </div>
 
-  </main>
-
-  <footer class="border-t border-slate-800/90 bg-slate-950 px-6 py-3.5 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
-    <div class="flex flex-wrap items-center gap-3">
-      <span class="font-bold text-slate-300 flex items-center gap-1.5 font-mono">
-        <i class="fa-solid fa-shoe-prints text-sky-400"></i> STEP-BY-STEP EXPLANATION:
-      </span>
-      <div class="flex flex-wrap items-center gap-1.5">
-        <button id="walk-1" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-mono text-[11px]">1. CaSR Sensing</button>
-        <button id="walk-2" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-mono text-[11px]">2. PTH Surge</button>
-        <button id="walk-3" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-mono text-[11px]">3. Bone Dissolution</button>
-        <button id="walk-4" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-mono text-[11px]">4. Calcitonin Storage</button>
-      </div>
-    </div>
-    <div class="flex items-center gap-3 font-mono text-[11px] text-slate-500">
-      <span>60 FPS Animation Engine</span>
-      <span>•</span>
-      <span>Hydroxyapatite [Ca₁₀(PO₄)₆(OH)₂]</span>
-    </div>
-  </footer>
+  </div>
 
   <script>
-    /**
-     * CALCIUM HOMEOSTASIS SIMULATION ENGINE
-     * Models the dynamic balance of Parathyroid Hormone, Calcitonin,
-     * Blood Ionized Calcium, and Skeletal Hydroxyapatite remodeling.
-     */
-
-    const canvas = document.getElementById('bioCanvas');
+    const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
 
-    // State Variables
-    let isRunning = true;
-    let simSpeed = 1.0;
-    let autoRegulate = true;
-    let bloodCalcium = 9.5; // mg/dL
-    const SETPOINT = 9.5;
+    let animationRunning = true;
+    let bloodCa = 9.5; // mg/dL
 
-    // Molecular & Physiological Telemetry
-    let pthLevel = 0.2; // 0.0 to 1.0
-    let calcitoninLevel = 0.05; // 0.0 to 1.0
-    let osteoclastActivity = 0.3; // 0.0 to 1.0
-    let osteoblastActivity = 0.5; // 0.0 to 1.0
-    let casrOccupancy = 0.5; // 0.0 to 1.0
-
-    // Particle Collections
-    const caIons = [];
-    const pthParticles = [];
-    const calcitoninParticles = [];
-    const acidParticles = [];
-
-    // Spatial Layout Anchors inside Canvas (820 x 530)
-    const LAYOUT = {
-      // Zone 1: Glands
-      glands: {
-        x: 25,
-        y: 35,
-        w: 195,
-        h: 460,
-        parathyroid: { x: 122, y: 135, r: 44 },
-        thyroidC: { x: 122, y: 345, r: 44 }
-      },
-      // Zone 2: Bloodstream Vessel
-      bloodstream: {
-        x1: 235,
-        y1: 50,
-        x2: 445,
-        y2: 475,
-        topY: 95,
-        botY: 425
-      },
-      // Zone 3: Bone Matrix & Cells
-      bone: {
-        x: 465,
-        y: 35,
-        w: 335,
-        h: 460,
-        osteoblast: { x: 500, y: 135, w: 85, h: 60 },
-        osteoclast: { x: 500, y: 310, w: 95, h: 75 },
-        matrixX: 625,
-        matrixW: 155
-      }
-    };
-
-    function initParticles() {
-      caIons.length = 0;
-      for (let i = 0; i < 48; i++) {
-        caIons.push({
-          x: LAYOUT.bloodstream.x1 + 10 + Math.random() * (LAYOUT.bloodstream.x2 - LAYOUT.bloodstream.x1 - 20),
-          y: LAYOUT.bloodstream.topY + 10 + Math.random() * (LAYOUT.bloodstream.botY - LAYOUT.bloodstream.topY - 20),
-          vx: (Math.random() - 0.5) * 0.9,
-          vy: 0.7 + Math.random() * 1.3,
-          radius: 3.5,
-          glow: 7
-        });
-      }
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight || 580;
     }
-    initParticles();
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    // DOM Elements
-    const headerCaVal = document.getElementById('header-calcium-val');
-    const headerStatusBadge = document.getElementById('header-status-badge');
-    const caSlider = document.getElementById('ca-slider');
-    const sliderVal = document.getElementById('slider-val');
-    const btnTogglePlay = document.getElementById('btn-toggle-play');
-    const playPauseIcon = document.getElementById('play-pause-icon');
-    const playPauseLabel = document.getElementById('play-pause-label');
-    const btnReset = document.getElementById('btn-reset');
-    const btnSpeed = document.getElementById('btn-speed');
-    const btnTriggerHypo = document.getElementById('btn-trigger-hypo');
-    const btnTriggerNorm = document.getElementById('btn-trigger-norm');
-    const btnTriggerHyper = document.getElementById('btn-trigger-hyper');
-    const toggleAutoreg = document.getElementById('toggle-autoreg');
-    const btnToggleGuide = document.getElementById('btn-toggle-guide');
-    const guideDrawer = document.getElementById('guide-drawer');
+    // Particle Systems
+    let caParticles = [];
+    let pthParticles = [];
+    let ctParticles = [];
+    let acidParticles = [];
 
-    // Telemetry Elements
-    const telemetryCasr = document.getElementById('telemetry-casr');
-    const telemetryPth = document.getElementById('telemetry-pth');
-    const telemetryCalcitonin = document.getElementById('telemetry-calcitonin');
-    const telemetryOsteoclast = document.getElementById('telemetry-osteoclast');
-    const telemetryOsteoblast = document.getElementById('telemetry-osteoblast');
-    const narrativeTitle = document.getElementById('narrative-title');
-    const narrativeDesc = document.getElementById('narrative-desc');
-    const narrativeIcon = document.getElementById('narrative-icon');
-    const narrativeIconBox = document.getElementById('narrative-icon-box');
-    const narrativeStateBadge = document.getElementById('narrative-state-badge');
+    // Osteocytes trapped inside bone
+    let osteocytes = [
+      { x: 0.80, y: 0.25, dendrites: 7 },
+      { x: 0.86, y: 0.45, dendrites: 6 },
+      { x: 0.78, y: 0.65, dendrites: 8 },
+      { x: 0.88, y: 0.80, dendrites: 7 }
+    ];
 
-    // Result & Outcome Elements
-    const vectorFrom = document.getElementById('vector-from');
-    const vectorTo = document.getElementById('vector-to');
-    const vectorArrow1 = document.getElementById('vector-arrow-1');
-    const vectorArrow2 = document.getElementById('vector-arrow-2');
-    const vectorArrow3 = document.getElementById('vector-arrow-3');
-    const vectorDesc = document.getElementById('vector-desc');
-    const mineralRateText = document.getElementById('mineral-rate-text');
-    const barResorb = document.getElementById('bar-resorb');
-    const barAccrete = document.getElementById('bar-accrete');
-    const boneResultCard = document.getElementById('bone-result-card');
-    const boneResultTitle = document.getElementById('bone-result-title');
-    const boneResultDesc = document.getElementById('bone-result-desc');
-    const systemicImpactText = document.getElementById('systemic-impact-text');
+    // Osteoblasts on the osteoid seam
+    let osteoblasts = [
+      { x: 0.67, y: 0.18, progress: 0.35, vy: 0.2 },
+      { x: 0.68, y: 0.32, progress: 0.85, vy: -0.15 }, // close to trapping
+      { x: 0.66, y: 0.50, progress: 0.15, vy: 0.1 },
+      { x: 0.67, y: 0.68, progress: 0.55, vy: -0.2 },
+      { x: 0.68, y: 0.82, progress: 0.05, vy: 0.15 }
+    ];
 
-    btnToggleGuide.addEventListener('click', () => {
-      guideDrawer.classList.toggle('hidden');
-    });
+    // Osteoclasts with ruffled borders and Howship's lacuna depth
+    let osteoclasts = [
+      { x: 0.65, y: 0.40, ruffledPhase: 0, pitDepth: 18, active: false }
+    ];
 
-    btnTogglePlay.addEventListener('click', () => {
-      isRunning = !isRunning;
-      playPauseIcon.className = isRunning ? "fa-solid fa-pause" : "fa-solid fa-play";
-      playPauseLabel.textContent = isRunning ? "Pause" : "Play";
-    });
+    // Dynamic bone surface margin contour (X coordinates relative to width)
+    let boneSurfaceBase = 0.68;
+    let pitDepthFactor = 0; // increases during hypocalcemia (acid excavation)
 
-    btnReset.addEventListener('click', () => {
-      setBloodCalcium(9.5, "Restored homeostatic equilibrium baseline (9.5 mg/dL).");
-    });
-
-    btnSpeed.addEventListener('click', () => {
-      if (simSpeed === 1.0) simSpeed = 2.0;
-      else if (simSpeed === 2.0) simSpeed = 0.5;
-      else simSpeed = 1.0;
-      btnSpeed.textContent = simSpeed.toFixed(1) + 'x';
-    });
-
-    toggleAutoreg.addEventListener('change', (e) => {
-      autoRegulate = e.target.checked;
-    });
-
-    caSlider.addEventListener('input', (e) => {
-      const val = parseFloat(e.target.value);
-      setBloodCalcium(val, "Manual serum slider adjusted blood calcium concentration.", false);
-    });
-
-    btnTriggerHypo.addEventListener('click', () => {
-      setBloodCalcium(7.2, "HYPOCALCEMIA TRIGGERED (<8.5 mg/dL): Parathyroid Chief cell CaSR receptors unbind. The molecular brake lifts, discharging massive PTH into circulation. Osteoclasts are stimulated to dissolve bone minerals to rescue blood levels.");
-    });
-
-    btnTriggerNorm.addEventListener('click', () => {
-      setBloodCalcium(9.5, "NORMAL CALCIUM (8.5–10.5 mg/dL): Physiological setpoint achieved. Negative feedback is stabilized; osteoblast bone deposition perfectly balances osteoclast breakdown.");
-    });
-
-    btnTriggerHyper.addEventListener('click', () => {
-      setBloodCalcium(12.2, "HYPERCALCEMIA TRIGGERED (>10.5 mg/dL): Elevated extracellular calcium saturates Thyroid C-cell CaSR receptors. Calcitonin hormone discharges immediately to paralyze osteoclasts and direct osteoblasts to deposit calcium into bone matrix.");
-    });
-
-    // Step-by-Step Guided Walkthrough
-    document.getElementById('walk-1').addEventListener('click', () => {
-      narrativeTitle.textContent = "STEP 1: SENSOR (CaSR RECEPTOR ACTIVATION)";
-      narrativeDesc.textContent = "Extracellular Calcium-Sensing Receptors (GPCRs) on chief and parafollicular cells continually sample ionized Ca²⁺. Receptor conformational state dictates whether PTH or Calcitonin is discharged.";
-      narrativeIcon.className = "fa-solid fa-satellite-dish text-sky-400";
-      narrativeStateBadge.textContent = "SURVEILLANCE";
-    });
-
-    document.getElementById('walk-2').addEventListener('click', () => {
-      setBloodCalcium(7.4, "STEP 2: LOW Ca²⁺ DISINHIBITS PTH. Chief cells exocytose Parathyroid Hormone (amber particles) into the blood vessel heading directly toward bone tissue.", true);
-      narrativeTitle.textContent = "STEP 2: PTH SURGE INTO BLOOD";
-      narrativeIcon.className = "fa-solid fa-arrow-up-right-dots text-amber-400";
-      narrativeStateBadge.textContent = "DISINHIBITION";
-    });
-
-    document.getElementById('walk-3').addEventListener('click', () => {
-      setBloodCalcium(7.8, "STEP 3: OSTEOCLAST RESORPTION. Osteoblasts present RANKL, activating osteoclasts. Giant multi-nucleated osteoclasts pump H⁺ acid to dissolve hydroxyapatite crystals, sending freed Ca²⁺ into blood.", true);
-      narrativeTitle.textContent = "STEP 3: SKELETAL DEMINERALIZATION";
-      narrativeIcon.className = "fa-solid fa-burst text-amber-500";
-      narrativeStateBadge.textContent = "ACID RESORPTION";
-    });
-
-    document.getElementById('walk-4').addEventListener('click', () => {
-      setBloodCalcium(11.8, "STEP 4: CALCITONIN BRAKE. Surplus calcium stimulates Thyroid C-cells to secrete Calcitonin (emerald particles). Calcitonin paralyzes osteoclasts instantly so osteoblasts can store the excess mineral safely.", true);
-      narrativeTitle.textContent = "STEP 4: CALCITONIN BRAKE & ACCRETION";
-      narrativeIcon.className = "fa-solid fa-shield-halved text-emerald-400";
-      narrativeStateBadge.textContent = "MINERAL ACCRETION";
-    });
-
-    function setBloodCalcium(val, reason, updateSlider = true) {
-      bloodCalcium = val;
-      if (updateSlider) caSlider.value = val.toFixed(1);
-      sliderVal.textContent = val.toFixed(1) + " mg/dL";
-      headerCaVal.textContent = val.toFixed(1);
-
-      if (reason) {
-        narrativeDesc.textContent = reason;
-      }
-      updatePhysiologicalState();
+    // Init Blood Ca²⁺ particles
+    for (let i = 0; i < 40; i++) {
+      caParticles.push({
+        x: 0.34 + Math.random() * 0.18,
+        y: Math.random(),
+        vx: (Math.random() - 0.5) * 0.001,
+        vy: 0.002 + Math.random() * 0.003,
+        size: 2.5 + Math.random() * 2
+      });
     }
 
-    function updatePhysiologicalState() {
-      // 1. Calculate CaSR Occupancy (sigmoidal response around 9.5)
-      casrOccupancy = 1 / (1 + Math.exp(-(bloodCalcium - 9.5) * 2.2));
-
-      // 2. Parathyroid Hormone (inhibited by high CaSR occupancy)
-      if (bloodCalcium < 8.5) {
-        pthLevel = Math.min(1.0, 0.4 + (8.5 - bloodCalcium) * 0.35);
-      } else if (bloodCalcium > 10.5) {
-        pthLevel = Math.max(0.02, 0.1 - (bloodCalcium - 10.5) * 0.1);
-      } else {
-        pthLevel = 0.25 - (bloodCalcium - 8.5) * 0.1;
+    function triggerScenario(type) {
+      document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active'));
+      const slider = document.getElementById('caSlider');
+      if (type === 'hypo') {
+        bloodCa = 7.2;
+        document.getElementById('card-hypo').classList.add('active');
+      } else if (type === 'eq') {
+        bloodCa = 9.5;
+        document.getElementById('card-eq').classList.add('active');
+      } else if (type === 'hyper') {
+        bloodCa = 12.5;
+        document.getElementById('card-hyper').classList.add('active');
       }
-
-      // 3. Calcitonin (stimulated by high CaSR occupancy)
-      if (bloodCalcium > 10.5) {
-        calcitoninLevel = Math.min(1.0, 0.3 + (bloodCalcium - 10.5) * 0.4);
-      } else {
-        calcitoninLevel = 0.05;
-      }
-
-      // 4. Bone Cell States
-      // Osteoclasts: stimulated by PTH, strongly paralyzed by Calcitonin
-      osteoclastActivity = Math.max(0.05, Math.min(1.0, (pthLevel * 1.25) - (calcitoninLevel * 1.6)));
-      // Osteoblasts: deposit calcium, stimulated to store excess when calcitonin is active
-      osteoblastActivity = Math.max(0.1, Math.min(1.0, 0.35 + (calcitoninLevel * 0.65)));
-
-      // Net Skeletal Flux (Positive = Bone Loss / Resorption; Negative = Bone Gain / Deposition)
-      const netSkeletalLoss = (osteoclastActivity - osteoblastActivity);
-
-      // Update UI Telemetry & Header
-      headerCaVal.textContent = bloodCalcium.toFixed(1);
-      sliderVal.textContent = bloodCalcium.toFixed(1) + " mg/dL";
-
-      // Update Result & Outcome Readouts (Circled Region Elements)
-      updateOutcomePanel(netSkeletalLoss);
-
-      // State Classifications
-      if (bloodCalcium < 8.5) {
-        headerStatusBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-amber-950/80 text-amber-400 border border-amber-800/60";
-        headerStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span> Hypocalcemia (<8.5 mg/dL)`;
-        narrativeStateBadge.className = "text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-amber-950 text-amber-300 font-bold border border-amber-800";
-        narrativeStateBadge.textContent = "Hypocalcemia";
-        narrativeTitle.textContent = "HYPOCALCEMIC DEFENSE: PTH SURGE & BONE LYSIS";
-        narrativeIconBox.className = "w-10 h-10 rounded-xl bg-amber-950 border border-amber-700/60 flex-shrink-0 flex items-center justify-center text-amber-400 text-base shadow-md";
-        narrativeIcon.className = "fa-solid fa-arrow-down-wide-short";
-
-        telemetryCasr.innerHTML = `<span class="text-amber-400 font-bold">Unbound (Brake Lifted)</span>`;
-        telemetryPth.textContent = (pthLevel > 0.6) ? "SURGING (High)" : "Elevated";
-        telemetryCalcitonin.textContent = "Suppressed";
-        telemetryOsteoclast.innerHTML = `<span class="text-amber-400 font-bold">Intense Resorption</span>`;
-        telemetryOsteoblast.textContent = "Presenting RANKL";
-      } else if (bloodCalcium > 10.5) {
-        headerStatusBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-purple-950/80 text-purple-400 border border-purple-800/60";
-        headerStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-purple-400 animate-ping"></span> Hypercalcemia (>10.5 mg/dL)`;
-        narrativeStateBadge.className = "text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-emerald-950 text-emerald-300 font-bold border border-emerald-800";
-        narrativeStateBadge.textContent = "Hypercalcemia";
-        narrativeTitle.textContent = "HYPERCALCEMIC DEFENSE: CALCITONIN BRAKE & DEPOSITION";
-        narrativeIconBox.className = "w-10 h-10 rounded-xl bg-emerald-950 border border-emerald-700/60 flex-shrink-0 flex items-center justify-center text-emerald-400 text-base shadow-md";
-        narrativeIcon.className = "fa-solid fa-shield-halved";
-
-        telemetryCasr.innerHTML = `<span class="text-emerald-400 font-bold">Fully Saturated (Triggered)</span>`;
-        telemetryPth.textContent = "Shut Off (<0.05)";
-        telemetryCalcitonin.textContent = (calcitoninLevel > 0.6) ? "SURGING (High)" : "Active";
-        telemetryOsteoclast.innerHTML = `<span class="text-slate-400 font-semibold">Paralyzed (Inhibited)</span>`;
-        telemetryOsteoblast.innerHTML = `<span class="text-emerald-400 font-bold">Rapid Mineralization</span>`;
-      } else {
-        headerStatusBadge.className = "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950/80 text-emerald-400 border border-emerald-800/60";
-        headerStatusBadge.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span> Normocalcemia (Equilibrium)`;
-        narrativeStateBadge.className = "text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 font-bold";
-        narrativeStateBadge.textContent = "Equilibrium";
-        narrativeTitle.textContent = "DYNAMIC NEGATIVE FEEDBACK LOOP ACTIVE";
-        narrativeIconBox.className = "w-10 h-10 rounded-xl bg-sky-950 border border-sky-800/60 flex-shrink-0 flex items-center justify-center text-sky-400 text-base shadow-md";
-        narrativeIcon.className = "fa-solid fa-scale-balanced";
-
-        telemetryCasr.innerHTML = `<span class="text-sky-300">Equilibrium Binding</span>`;
-        telemetryPth.textContent = "Basal Output";
-        telemetryCalcitonin.textContent = "Low Baseline";
-        telemetryOsteoclast.textContent = "Balanced Remodeling";
-        telemetryOsteoblast.textContent = "Matrix Homeostasis";
-      }
+      slider.value = bloodCa;
+      updateUI();
     }
 
-    // Update Result & Outcome Panel (The user's circled area)
-    function updateOutcomePanel(netSkeletalLoss) {
-      if (netSkeletalLoss > 0.15) {
-        // Net Bone Loss / Dissolution
-        const pct = Math.min(100, Math.round(netSkeletalLoss * 110));
-        barResorb.style.width = pct + "%";
-        barAccrete.style.width = "0%";
-        mineralRateText.textContent = "-" + (netSkeletalLoss * 42).toFixed(1) + " mg/h";
-        mineralRateText.className = "font-mono text-amber-400 font-bold";
+    document.getElementById('caSlider').addEventListener('input', (e) => {
+      bloodCa = parseFloat(e.target.value);
+      document.querySelectorAll('.scenario-card').forEach(c => c.classList.remove('active'));
+      updateUI();
+    });
 
-        vectorFrom.textContent = "BONE";
-        vectorFrom.className = "text-xs font-bold text-amber-400 font-mono";
-        vectorTo.textContent = "BLOOD";
-        vectorTo.className = "text-xs font-bold text-sky-400 font-mono";
-        vectorArrow1.className = "fa-solid fa-arrow-left text-[11px] text-amber-400 animate-pulse";
-        vectorArrow2.className = "fa-solid fa-arrow-left text-sm text-amber-400";
-        vectorArrow3.className = "fa-solid fa-arrow-left text-[11px] text-amber-400 animate-pulse";
-        vectorDesc.innerHTML = `<span class="text-amber-300 font-semibold">Osteoclast Resorption:</span> Dissolving hydroxyapatite matrix into bloodstream`;
+    document.getElementById('btn-pause').addEventListener('click', function() {
+      animationRunning = !animationRunning;
+      this.textContent = animationRunning ? 'Pause' : 'Resume';
+    });
 
-        boneResultCard.className = "bg-amber-950/40 rounded-xl p-3.5 border border-amber-800/60 flex flex-col gap-1.5";
-        boneResultTitle.innerHTML = `<span class="text-amber-300 font-black">Matrix Demineralization</span>`;
-        boneResultDesc.textContent = "Osteoclasts dissolve microscopic bone pockets. This releases vital calcium ions into systemic circulation to safeguard muscle & nerve firing.";
+    document.getElementById('btn-reset').addEventListener('click', function() {
+      bloodCa = 9.5;
+      document.getElementById('caSlider').value = 9.5;
+      osteoblasts.forEach(b => b.progress = Math.random() * 0.5);
+      osteoclasts[0].pitDepth = 15;
+      pitDepthFactor = 0;
+      updateUI();
+    });
 
-        systemicImpactText.innerHTML = `<b class="text-amber-300">Rescues blood levels:</b> Prevents hypocalcemic tetany, muscle spasms, and cardiac arrhythmias by borrowing from the skeletal bank.`;
+    function updateUI() {
+      document.getElementById('header-ca-val').textContent = `${bloodCa.toFixed(1)} mg/dL`;
+      document.getElementById('slider-val').textContent = `${bloodCa.toFixed(1)} mg/dL`;
 
-      } else if (netSkeletalLoss < -0.15) {
-        // Net Bone Mineral Gain / Deposition
-        const pct = Math.min(100, Math.round(Math.abs(netSkeletalLoss) * 110));
-        barAccrete.style.width = pct + "%";
-        barResorb.style.width = "0%";
-        mineralRateText.textContent = "+" + (Math.abs(netSkeletalLoss) * 35).toFixed(1) + " mg/h";
-        mineralRateText.className = "font-mono text-emerald-400 font-bold";
+      const fluxBadge = document.getElementById('fluxBadge');
+      const fluxText = document.getElementById('fluxText');
+      const fluxIcon = document.getElementById('fluxIcon');
+      const gaugeFill = document.getElementById('gaugeFill');
+      const netRateText = document.getElementById('netRateText');
+      const blastTag = document.getElementById('telemetryBlastCount');
+      const clastTag = document.getElementById('telemetryClastStatus');
+      const lacunaPHTag = document.getElementById('telemetryLacunaPH');
+      const systemicDesc = document.getElementById('systemicDesc');
 
-        vectorFrom.textContent = "BLOOD";
-        vectorFrom.className = "text-xs font-bold text-sky-400 font-mono";
-        vectorTo.textContent = "BONE";
-        vectorTo.className = "text-xs font-bold text-emerald-400 font-mono";
-        vectorArrow1.className = "fa-solid fa-arrow-right text-[11px] text-emerald-400 animate-pulse";
-        vectorArrow2.className = "fa-solid fa-arrow-right text-sm text-emerald-400";
-        vectorArrow3.className = "fa-solid fa-arrow-right text-[11px] text-emerald-400 animate-pulse";
-        vectorDesc.innerHTML = `<span class="text-emerald-300 font-semibold">Osteoblast Accretion:</span> Locking surplus serum ions into bone lattice`;
+      if (bloodCa < 8.5) {
+        // Hypocalcemia
+        const severity = (8.5 - bloodCa) / 2.0;
+        fluxBadge.style.color = '#f59e0b';
+        fluxBadge.style.borderColor = '#d97706';
+        fluxIcon.textContent = '◀ BONE TO BLOOD';
+        fluxText.textContent = 'OSTEOLYTIC RESORPTION';
+        gaugeFill.style.left = '15%';
+        gaugeFill.style.width = '35%';
+        gaugeFill.style.background = '#f59e0b';
+        netRateText.textContent = `-${(severity * 45).toFixed(1)} mg/hr`;
 
-        boneResultCard.className = "bg-emerald-950/40 rounded-xl p-3.5 border border-emerald-800/60 flex flex-col gap-1.5";
-        boneResultTitle.innerHTML = `<span class="text-emerald-300 font-black">Mineral Accretion &amp; Bone Hardening</span>`;
-        boneResultDesc.textContent = "Osteoblasts rapidly incorporate free calcium and phosphate into osteoid tissue, reinforcing skeletal structural strength.";
+        blastTag.textContent = 'Suppressed';
+        blastTag.style.background = '#475569';
+        clastTag.textContent = 'Hyperactive (Acid Sealing)';
+        clastTag.style.background = '#ea580c';
+        lacunaPHTag.textContent = 'pH 4.2 (Highly Acidic H⁺)';
+        lacunaPHTag.style.color = '#fca5a5';
 
-        systemicImpactText.innerHTML = `<b class="text-emerald-300">Protects kidneys &amp; vessels:</b> Prevents hypercalcemic calcification, kidney stone crystal formation, and cardiac conduction slowing.`;
+        systemicDesc.textContent = 'Hypocalcemic state: PTH triggers vacuum sealing of osteoclasts. H⁺ ATPase pumps acid into Howship’s lacuna to dissolve hydroxyapatite, preventing neuromuscular tetany.';
+      } else if (bloodCa > 10.5) {
+        // Hypercalcemia
+        const severity = (bloodCa - 10.5) / 3.0;
+        fluxBadge.style.color = '#10b981';
+        fluxBadge.style.borderColor = '#059669';
+        fluxIcon.textContent = 'BONE TO MATRIX ▶';
+        fluxText.textContent = 'MINERAL ACCRETION';
+        gaugeFill.style.left = '50%';
+        gaugeFill.style.width = `${Math.min(48, severity * 48)}%`;
+        gaugeFill.style.background = '#10b981';
+        netRateText.textContent = `+${(severity * 38).toFixed(1)} mg/hr`;
 
+        blastTag.textContent = 'Hyperactive (Synthesizing Osteoid)';
+        blastTag.style.background = '#0284c7';
+        clastTag.textContent = 'Quiescent / Retracted';
+        clastTag.style.background = '#334155';
+        lacunaPHTag.textContent = 'pH 7.4 (Neutralized)';
+        lacunaPHTag.style.color = '#94a3b8';
+
+        systemicDesc.textContent = 'Hypercalcemic state: Calcitonin freezes osteoclasts. Osteoblasts deposit dense collagen matrix & calcium phosphate, rapidly embedding into lifelong osteocytes.';
       } else {
         // Equilibrium
-        barResorb.style.width = "0%";
-        barAccrete.style.width = "0%";
-        mineralRateText.textContent = "0.0 mg/h";
-        mineralRateText.className = "font-mono text-sky-400 font-bold";
+        fluxBadge.style.color = '#38bdf8';
+        fluxBadge.style.borderColor = '#0284c7';
+        fluxIcon.textContent = '⇄';
+        fluxText.textContent = 'DYNAMIC EQUILIBRIUM';
+        gaugeFill.style.left = '48%';
+        gaugeFill.style.width = '4%';
+        gaugeFill.style.background = '#38bdf8';
+        netRateText.textContent = '0.0 mg/hr (Coupled)';
 
-        vectorFrom.textContent = "BONE";
-        vectorFrom.className = "text-xs font-bold text-slate-300 font-mono";
-        vectorTo.textContent = "BLOOD";
-        vectorTo.className = "text-xs font-bold text-slate-300 font-mono";
-        vectorArrow1.className = "fa-solid fa-circle text-[7px] text-slate-600";
-        vectorArrow2.className = "fa-solid fa-arrow-right-arrow-left text-sm text-sky-400";
-        vectorArrow3.className = "fa-solid fa-circle text-[7px] text-slate-600";
-        vectorDesc.textContent = "Zero Net Mineral Exchange (Remodeling Equilibrium)";
+        blastTag.textContent = 'Balanced Secretion';
+        blastTag.style.background = '#0369a1';
+        clastTag.textContent = 'Basal Remodeling';
+        clastTag.style.background = '#9a3412';
+        lacunaPHTag.textContent = 'pH 6.8 (Neutral)';
+        lacunaPHTag.style.color = '#cbd5e1';
 
-        boneResultCard.className = "bg-slate-950/90 rounded-xl p-3.5 border border-slate-800 flex flex-col gap-1.5";
-        boneResultTitle.innerHTML = `<span class="text-slate-200 font-black">Remodeling Equilibrium</span>`;
-        boneResultDesc.textContent = "Bone matrix density is conserved. Normal remodeling repairs microfractures with zero net skeletal mineral deficit.";
-
-        systemicImpactText.innerHTML = `Maintains perfect physiological balance for neuromuscular action potentials and skeletal integrity.`;
+        systemicDesc.textContent = 'Homeostatic equilibrium: Continuous bone turnover where osteoblast mineral matrix accretion exactly matches osteoclast localized resorption.';
       }
+      document.getElementById('telemetryCyteCount').textContent = `${osteocytes.length} Embedded`;
     }
 
-    let lastTime = performance.now();
-    function animate(currentTime) {
-      requestAnimationFrame(animate);
-
-      const dt = Math.min((currentTime - lastTime) / 1000, 0.1);
-      lastTime = currentTime;
-
-      if (!isRunning) return;
-
-      // 1. Biological Negative Feedback Auto-Regulation
-      if (autoRegulate) {
-        // If osteoclasts are actively resorbing bone, they return Ca²⁺ into blood
-        const calciumReleased = (osteoclastActivity * 0.26 - osteoblastActivity * 0.17) * dt * simSpeed;
-        bloodCalcium += calciumReleased;
-
-        // Baseline biological setpoint pull
-        const pullToSetpoint = (SETPOINT - bloodCalcium) * 0.04 * dt * simSpeed;
-        bloodCalcium += pullToSetpoint;
-
-        updatePhysiologicalState();
-        caSlider.value = bloodCalcium.toFixed(1);
-      }
-
-      // 2. Spawn Hormone Particles based on secretion levels
-      // PTH from Parathyroid Chief Cells -> towards bloodstream
-      if (Math.random() < pthLevel * 0.75 * simSpeed) {
-        pthParticles.push({
-          x: LAYOUT.glands.parathyroid.x + (Math.random() - 0.5) * 20,
-          y: LAYOUT.glands.parathyroid.y + (Math.random() - 0.5) * 20,
-          vx: 1.3 + Math.random() * 1.5,
-          vy: (Math.random() - 0.5) * 0.7,
-          life: 1.0
-        });
-      }
-
-      // Calcitonin from Thyroid C-Cells -> towards bloodstream
-      if (Math.random() < calcitoninLevel * 0.75 * simSpeed) {
-        calcitoninParticles.push({
-          x: LAYOUT.glands.thyroidC.x + (Math.random() - 0.5) * 20,
-          y: LAYOUT.glands.thyroidC.y + (Math.random() - 0.5) * 20,
-          vx: 1.3 + Math.random() * 1.5,
-          vy: (Math.random() - 0.5) * 0.7,
-          life: 1.0
-        });
-      }
-
-      // Acid Protons (H⁺) from Osteoclasts into bone resorption lacuna
-      if (Math.random() < osteoclastActivity * 0.85 * simSpeed) {
-        acidParticles.push({
-          x: LAYOUT.bone.osteoclast.x + 55,
-          y: LAYOUT.bone.osteoclast.y + 15 + Math.random() * 35,
-          vx: 0.7 + Math.random() * 0.9,
-          vy: (Math.random() - 0.5) * 0.6,
-          life: 1.0
-        });
-      }
-
-      // 3. Render Canvas Chambers and Particles
-      render();
-    }
-
+    // Main Canvas Render Loop
     function render() {
+      if (!animationRunning) {
+        requestAnimationFrame(render);
+        return;
+      }
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // A. Anatomical Background Chambers
-      drawEndocrineGlands();
-      drawBloodstream();
-      drawBoneEnvironment();
+      const w = canvas.width;
+      const h = canvas.height;
 
-      // B. Dynamic Biological Particles
-      drawCalciumIons();
-      drawPthParticles();
-      drawCalcitoninParticles();
-      drawAcidLacuna();
+      // Dynamic adjustments based on bloodCa
+      const isHypo = bloodCa < 8.5;
+      const isHyper = bloodCa > 10.5;
 
-      // C. Connecting Flow Annotations
-      drawDynamicCircuitArrows();
-    }
-
-    // Chamber 1: Endocrine Glands (Parathyroid & Thyroid)
-    function drawEndocrineGlands() {
-      ctx.save();
-      const g = LAYOUT.glands;
-
-      // Outer Card Box
-      ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
-      ctx.strokeStyle = "rgba(51, 65, 85, 0.7)";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(g.x, g.y, g.w, g.h, 16);
-      ctx.fill();
-      ctx.stroke();
-
-      // Header Tag
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 11px 'Plus Jakarta Sans'";
-      ctx.textAlign = "center";
-      ctx.fillText("ENDOCRINE SENSORS", g.x + g.w / 2, g.y + 26);
-
-      // 1. Parathyroid Chief Gland Body
-      const pt = g.parathyroid;
-      const ptGrad = ctx.createRadialGradient(pt.x, pt.y, 8, pt.x, pt.y, pt.r);
-      ptGrad.addColorStop(0, pthLevel > 0.4 ? "rgba(217, 119, 6, 0.5)" : "rgba(30, 41, 59, 0.8)");
-      ptGrad.addColorStop(1, "rgba(15, 23, 42, 0.95)");
-
-      ctx.fillStyle = ptGrad;
-      ctx.strokeStyle = pthLevel > 0.4 ? "#f59e0b" : "#475569";
-      ctx.lineWidth = pthLevel > 0.4 ? 2.5 : 1.5;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      // Labels
-      ctx.fillStyle = pthLevel > 0.4 ? "#fbbf24" : "#ffffff";
-      ctx.font = "bold 13px 'Plus Jakarta Sans'";
-      ctx.fillText("Parathyroid", pt.x, pt.y - 12);
-      ctx.font = "600 11px 'Plus Jakarta Sans'";
-      ctx.fillStyle = "#94a3b8";
-      ctx.fillText("Chief Cells", pt.x, pt.y + 4);
-      ctx.font = "bold 10px 'JetBrains Mono'";
-      ctx.fillStyle = pthLevel > 0.4 ? "#f59e0b" : "#64748b";
-      ctx.fillText(pthLevel > 0.4 ? "PTH SURGING" : "PTH Basal", pt.x, pt.y + 22);
-
-      drawReceptorStuds(pt.x, pt.y, pt.r, "#38bdf8", casrOccupancy < 0.4);
-
-      // 2. Thyroid Parafollicular C-Cells
-      const tc = g.thyroidC;
-      const tcGrad = ctx.createRadialGradient(tc.x, tc.y, 8, tc.x, tc.y, tc.r);
-      tcGrad.addColorStop(0, calcitoninLevel > 0.3 ? "rgba(5, 150, 105, 0.5)" : "rgba(30, 41, 59, 0.8)");
-      tcGrad.addColorStop(1, "rgba(15, 23, 42, 0.95)");
-
-      ctx.fillStyle = tcGrad;
-      ctx.strokeStyle = calcitoninLevel > 0.3 ? "#10b981" : "#475569";
-      ctx.lineWidth = calcitoninLevel > 0.3 ? 2.5 : 1.5;
-      ctx.beginPath();
-      ctx.arc(tc.x, tc.y, tc.r, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = calcitoninLevel > 0.3 ? "#34d399" : "#ffffff";
-      ctx.font = "bold 13px 'Plus Jakarta Sans'";
-      ctx.fillText("Thyroid", tc.x, tc.y - 12);
-      ctx.font = "600 11px 'Plus Jakarta Sans'";
-      ctx.fillStyle = "#94a3b8";
-      ctx.fillText("Parafollicular Cells", tc.x, tc.y + 4);
-      ctx.font = "bold 10px 'JetBrains Mono'";
-      ctx.fillStyle = calcitoninLevel > 0.3 ? "#10b981" : "#64748b";
-      ctx.fillText(calcitoninLevel > 0.3 ? "CALCITONIN ON" : "Calcitonin Off", tc.x, tc.y + 22);
-
-      drawReceptorStuds(tc.x, tc.y, tc.r, "#38bdf8", casrOccupancy > 0.7);
-
-      ctx.restore();
-    }
-
-    // Helper: draw CaSR receptor studs on cell membrane
-    function drawReceptorStuds(cx, cy, r, color, isSignaling) {
-      ctx.save();
-      const numReceptors = 8;
-      for (let i = 0; i < numReceptors; i++) {
-        const angle = (i / numReceptors) * Math.PI * 2;
-        const rx = cx + Math.cos(angle) * (r + 4);
-        const ry = cy + Math.sin(angle) * (r + 4);
-
-        ctx.fillStyle = isSignaling ? "#f43f5e" : color;
-        ctx.beginPath();
-        ctx.arc(rx, ry, 3.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        ctx.strokeStyle = "#64748b";
-        ctx.lineWidth = 1.2;
-        ctx.beginPath();
-        ctx.moveTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
-        ctx.lineTo(rx, ry);
-        ctx.stroke();
-      }
-      ctx.restore();
-    }
-
-    // Chamber 2: Bloodstream Vessel
-    function drawBloodstream() {
-      ctx.save();
-      const b = LAYOUT.bloodstream;
-
-      // Outer Vessel Walls
-      const vesselGrad = ctx.createLinearGradient(0, b.topY, 0, b.botY);
-      vesselGrad.addColorStop(0, "rgba(225, 29, 72, 0.25)");
-      vesselGrad.addColorStop(0.5, "rgba(159, 18, 57, 0.5)");
-      vesselGrad.addColorStop(1, "rgba(225, 29, 72, 0.25)");
-
-      ctx.fillStyle = vesselGrad;
-      ctx.fillRect(b.x1, b.topY, b.x2 - b.x1, b.botY - b.topY);
-
-      // Endothelial Linings
-      ctx.strokeStyle = "rgba(244, 63, 94, 0.85)";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(b.x1, b.topY);
-      ctx.lineTo(b.x2, b.topY);
-      ctx.moveTo(b.x1, b.botY);
-      ctx.lineTo(b.x2, b.botY);
-      ctx.stroke();
-
-      // Flow Marker Title
-      ctx.fillStyle = "#fda4af";
-      ctx.font = "bold 11px 'Plus Jakarta Sans'";
-      ctx.textAlign = "center";
-      ctx.fillText("SYSTEMIC BLOODSTREAM", (b.x1 + b.x2) / 2, b.topY + 22);
-
-      // Streaming RBCs (Erythrocytes)
-      ctx.fillStyle = "rgba(190, 18, 60, 0.35)";
-      const t = performance.now() * 0.001 * simSpeed;
-      for (let i = 0; i < 7; i++) {
-        const rbcY = b.topY + 45 + (i * 38);
-        const rbcX = b.x1 + 30 + ((t * 40 + i * 50) % (b.x2 - b.x1 - 60));
-        ctx.beginPath();
-        ctx.ellipse(rbcX, rbcY, 13, 7.5, 0.2, 0, Math.PI * 2);
-        ctx.fill();
+      // Excavation depth changes dynamically
+      if (isHypo) {
+        pitDepthFactor = Math.min(pitDepthFactor + 0.002, 1.0);
+      } else {
+        pitDepthFactor = Math.max(pitDepthFactor - 0.003, 0.0);
       }
 
-      ctx.restore();
+      // Zone 1: Endocrine Sensor Glands (Left: X = 0 to 0.28)
+      drawEndocrineGlands(w, h, isHypo, isHyper);
+
+      // Zone 2: Vascular Bloodstream Highway (Center: X = 0.28 to 0.54)
+      drawVascularChannel(w, h);
+
+      // Zone 3: Bone Remodeling Microenvironment (Right: X = 0.54 to 1.0)
+      drawBoneMatrixAndCells(w, h, isHypo, isHyper);
+
+      // Hormone particle logic
+      updateHormoneParticles(w, h, isHypo, isHyper);
+
+      requestAnimationFrame(render);
     }
 
-    // Chamber 3: Bone Matrix & Bone Cells (Osteoblasts & Osteoclasts)
-    function drawBoneEnvironment() {
-      ctx.save();
-      const bo = LAYOUT.bone;
+    // ZONE 1: Glands
+    function drawEndocrineGlands(w, h, isHypo, isHyper) {
+      // Parathyroid Gland
+      const ptX = w * 0.14;
+      const ptY = h * 0.28;
+      const ptRadius = 52;
 
-      // Outer Bone Chamber Card
-      ctx.fillStyle = "rgba(15, 23, 42, 0.7)";
-      ctx.strokeStyle = "rgba(51, 65, 85, 0.7)";
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(bo.x, bo.y, bo.w, bo.h, 16);
-      ctx.fill();
-      ctx.stroke();
-
-      ctx.fillStyle = "#94a3b8";
-      ctx.font = "bold 11px 'Plus Jakarta Sans'";
-      ctx.textAlign = "center";
-      ctx.fillText("BONE MICROENVIRONMENT", bo.x + 110, bo.y + 26);
-
-      // Mineralized Hydroxyapatite Matrix Slab (Far Right Column)
-      const matX = bo.matrixX;
-      const matW = bo.matrixW;
-      const matH = bo.h - 50;
-
-      // Dynamic Bone Matrix visual response (erosion vs accretion glow)
-      let boneGlowColor = "rgba(226, 232, 240, 0.15)";
-      if (osteoclastActivity > 0.5) boneGlowColor = "rgba(245, 158, 11, 0.25)";
-      else if (osteoblastActivity > 0.6) boneGlowColor = "rgba(16, 185, 129, 0.25)";
-
-      ctx.shadowColor = boneGlowColor;
-      ctx.shadowBlur = 12;
-
-      const boneGrad = ctx.createLinearGradient(matX, 0, matX + matW, 0);
-      boneGrad.addColorStop(0, "#f1f5f9");
-      boneGrad.addColorStop(0.5, "#e2e8f0");
-      boneGrad.addColorStop(1, "#cbd5e1");
-
-      ctx.fillStyle = boneGrad;
-      ctx.beginPath();
-      ctx.roundRect(matX, bo.y + 35, matW, matH, 10);
-      ctx.fill();
-
-      // Matrix Haversian / Trabecular Pores
-      ctx.strokeStyle = "#94a3b8";
-      ctx.lineWidth = 1.5;
-      ctx.shadowBlur = 0;
-      for (let i = 0; i < 9; i++) {
-        const cx = matX + 22 + (i % 2) * 20;
-        const cy = bo.y + 65 + i * 42;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-        ctx.stroke();
-      }
-
-      // Matrix Column Text Labels
-      ctx.save();
-      ctx.translate(matX + matW - 25, bo.y + 240);
-      ctx.rotate(Math.PI / 2);
-      ctx.fillStyle = "#1e293b";
-      ctx.font = "800 12px 'JetBrains Mono'";
-      ctx.textAlign = "center";
-      ctx.fillText("HYDROXYAPATITE MATRIX", 0, -8);
-      ctx.font = "bold 10px 'JetBrains Mono'";
-      ctx.fillStyle = "#475569";
-      ctx.fillText("99% Body Calcium Reservoir", 0, 8);
-      ctx.restore();
-
-      // 1. Osteoblast Cell (Top: "Builder")
-      const ob = bo.osteoblast;
-      ctx.fillStyle = osteoblastActivity > 0.6 ? "#0284c7" : "#0369a1";
-      ctx.strokeStyle = osteoblastActivity > 0.6 ? "#38bdf8" : "#0ea5e9";
+      ctx.fillStyle = isHypo ? 'rgba(245, 158, 11, 0.18)' : 'rgba(30, 41, 59, 0.6)';
+      ctx.strokeStyle = isHypo ? '#f59e0b' : '#334155';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      ctx.roundRect(ob.x, ob.y, ob.w, ob.h, 12);
+      ctx.arc(ptX, ptY, ptRadius, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 11px 'Plus Jakarta Sans'";
-      ctx.textAlign = "center";
-      ctx.fillText("OSTEOBLAST", ob.x + ob.w / 2, ob.y + 24);
-      ctx.font = "600 10px 'Plus Jakarta Sans'";
-      ctx.fillStyle = "#bae6fd";
-      ctx.fillText("Bone Builder", ob.x + ob.w / 2, ob.y + 38);
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Parathyroid Chief Cell', ptX, ptY - 8);
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = isHypo ? '#fbbf24' : '#94a3b8';
+      ctx.fillText(isHypo ? 'CaSR Off → DUMPING PTH' : 'CaSR Active (Basal)', ptX, ptY + 10);
 
-      // 2. Osteoclast Cell (Bottom: Multi-nucleated "Resorber")
-      const oc = bo.osteoclast;
-      ctx.fillStyle = osteoclastActivity > 0.5 ? "#b45309" : "#78350f";
-      ctx.strokeStyle = osteoclastActivity > 0.5 ? "#f59e0b" : "#d97706";
-      ctx.lineWidth = osteoclastActivity > 0.5 ? 2.5 : 1.5;
-
+      // Thyroid Parafollicular C-Cells
+      const thY = h * 0.72;
+      ctx.fillStyle = isHyper ? 'rgba(16, 185, 129, 0.18)' : 'rgba(30, 41, 59, 0.6)';
+      ctx.strokeStyle = isHyper ? '#10b981' : '#334155';
       ctx.beginPath();
-      ctx.roundRect(oc.x, oc.y, oc.w, oc.h, 16);
+      ctx.arc(ptX, thY, ptRadius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#f8fafc';
+      ctx.font = 'bold 12px sans-serif';
+      ctx.fillText('Thyroid C-Cell', ptX, thY - 8);
+      ctx.font = '10px sans-serif';
+      ctx.fillStyle = isHyper ? '#34d399' : '#94a3b8';
+      ctx.fillText(isHyper ? 'CaSR Saturated → CALCITONIN' : 'Calcitonin Inactive', ptX, thY + 10);
+    }
+
+    // ZONE 2: Vascular Channel
+    function drawVascularChannel(w, h) {
+      const vLeft = w * 0.28;
+      const vWidth = w * 0.24;
+
+      // Capillary bed background
+      ctx.fillStyle = '#1e1124';
+      ctx.fillRect(vLeft, 0, vWidth, h);
+
+      // Endothelial borders
+      ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+      ctx.lineWidth = 4;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(vLeft, 0); ctx.lineTo(vLeft, h);
+      ctx.moveTo(vLeft + vWidth, 0); ctx.lineTo(vLeft + vWidth, h);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Label
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+      ctx.font = 'bold 14px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.save();
+      ctx.translate(vLeft + vWidth / 2, h / 2);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('VASCULAR SINUSOID (BLOODSTREAM)', 0, 0);
+      ctx.restore();
+
+      // Flowing Ca²⁺ ions
+      caParticles.forEach(p => {
+        p.y += p.vy;
+        p.x += p.vx;
+        if (p.y > 1) p.y = 0;
+        if (p.y < 0) p.y = 1;
+        if (p.x < 0.29) p.x = 0.51;
+        if (p.x > 0.51) p.x = 0.29;
+
+        const px = p.x * w;
+        const py = p.y * h;
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#0284c7';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(px, py, p.size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+    }
+
+    // ZONE 3: Bone Matrix, Osteoblasts turning into Osteocytes & Osteoclasts
+    function drawBoneMatrixAndCells(w, h, isHypo, isHyper) {
+      const boneStartX = w * boneSurfaceBase;
+      const pitDepthPx = pitDepthFactor * 45; // excavated pit depth
+
+      // 1. Draw Hydroxyapatite Solid Bone Block with dynamic Howship's lacuna indentation
+      ctx.fillStyle = '#cbd5e1';
+      ctx.beginPath();
+      ctx.moveTo(w, 0);
+      ctx.lineTo(boneStartX, 0);
+      ctx.lineTo(boneStartX, h * 0.30);
+
+      // Curved Howship's lacuna (osteoclast resorption trench)
+      const pitCenterY = h * 0.44;
+      ctx.quadraticCurveTo(boneStartX + pitDepthPx, pitCenterY, boneStartX, h * 0.58);
+
+      ctx.lineTo(boneStartX, h);
+      ctx.lineTo(w, h);
+      ctx.closePath();
+      ctx.fill();
+
+      // Osteoid seam (unmineralized collagen layer on the surface where osteoblasts work)
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 6;
+      ctx.beginPath();
+      ctx.moveTo(boneStartX - 3, 0);
+      ctx.lineTo(boneStartX - 3, h * 0.30);
+      ctx.moveTo(boneStartX - 3, h * 0.58);
+      ctx.lineTo(boneStartX - 3, h);
+      ctx.stroke();
+
+      // 2. Draw Trapped Osteocytes inside Lacunae with radiating dendritic filopodia
+      osteocytes.forEach((ocyte, idx) => {
+        const ox = ocyte.x * w;
+        const oy = ocyte.y * h;
+
+        // Lacuna cavity
+        ctx.fillStyle = '#94a3b8';
+        ctx.beginPath();
+        ctx.ellipse(ox, oy, 14, 10, 0.2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Radiating Canaliculi branches (cytoplasmic extensions)
+        ctx.strokeStyle = '#7c3aed';
+        ctx.lineWidth = 1.5;
+        for (let a = 0; a < ocyte.dendrites; a++) {
+          const angle = (a / ocyte.dendrites) * Math.PI * 2;
+          const len = 18 + (a % 3) * 6;
+          ctx.beginPath();
+          ctx.moveTo(ox, oy);
+          ctx.lineTo(ox + Math.cos(angle) * len, oy + Math.sin(angle) * len);
+          ctx.stroke();
+        }
+
+        // Osteocyte Cell Body
+        ctx.fillStyle = '#a855f7';
+        ctx.beginPath();
+        ctx.arc(ox, oy, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Label for first one
+        if (idx === 0) {
+          ctx.fillStyle = '#475569';
+          ctx.font = 'bold 9px sans-serif';
+          ctx.fillText('Osteocyte in Lacuna', ox, oy - 14);
+        }
+      });
+
+      // 3. Draw Osteoblasts laying down matrix and progressively entrapping themselves
+      osteoblasts.forEach((b, idx) => {
+        b.y += b.vy * 0.001;
+        if (b.y < 0.12 || b.y > 0.88) b.vy *= -1;
+
+        // Mineralization progress increases during Hypercalcemia & Normal
+        if (isHyper) {
+          b.progress += 0.0018;
+        } else if (!isHypo) {
+          b.progress += 0.0006;
+        }
+
+        // If progress exceeds 1.0, osteoblast is fully entombed -> turns into Osteocyte!
+        if (b.progress >= 1.0) {
+          osteocytes.push({
+            x: b.x + 0.08,
+            y: b.y,
+            dendrites: 6 + Math.floor(Math.random() * 4)
+          });
+          // Reset as fresh osteoblast at seam
+          b.progress = 0;
+          b.x = 0.67;
+          updateUI();
+        }
+
+        // As progress grows, the osteoblast shifts deeper into the matrix and encases itself
+        const currentX = (b.x + b.progress * 0.06) * w;
+        const currentY = b.y * h;
+
+        // Secreted matrix halo surrounding the osteoblast
+        if (b.progress > 0.2) {
+          ctx.fillStyle = `rgba(254, 240, 138, ${b.progress * 0.7})`;
+          ctx.beginPath();
+          ctx.arc(currentX, currentY, 12 + b.progress * 6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Osteoblast body (morphing towards spindle shape as it gets trapped)
+        ctx.fillStyle = b.progress > 0.75 ? '#c084fc' : '#0ea5e9';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.arc(currentX, currentY, 8 - b.progress * 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Secreted osteoid matrix droplets into the bone edge
+        if (Math.random() < 0.15 && !isHypo) {
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.arc(currentX + 8, currentY + (Math.random() - 0.5) * 8, 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        if (idx === 1) {
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = '10px sans-serif';
+          ctx.fillText(`Osteoblast ➔ Osteocyte (${Math.floor(b.progress * 100)}% entrapped)`, currentX - 60, currentY - 12);
+        }
+      });
+
+      // 4. Draw Osteoclast in Howship's Lacuna (Dissolving Bone Tissue)
+      const clast = osteoclasts[0];
+      const clastX = (boneStartX - 10 + pitDepthPx * 0.5);
+      const clastY = pitCenterY;
+      clast.ruffledPhase += 0.2;
+
+      // Resorption pit zone background (Howship's lacuna microenvironment)
+      if (isHypo) {
+        ctx.fillStyle = 'rgba(239, 68, 68, 0.25)';
+        ctx.beginPath();
+        ctx.ellipse(clastX + 10, clastY, 26, 38, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Acidic H⁺ / Cathepsin K particles eating bone
+        if (Math.random() < 0.6) {
+          acidParticles.push({
+            x: clastX + 10 + (Math.random() - 0.5) * 10,
+            y: clastY + (Math.random() - 0.5) * 26,
+            life: 20
+          });
+        }
+      }
+
+      // Draw Acid Dissolution Particles
+      acidParticles.forEach((ap, aIdx) => {
+        ctx.fillStyle = '#f87171';
+        ctx.beginPath();
+        ctx.arc(ap.x, ap.y, 2, 0, Math.PI * 2);
+        ctx.fill();
+        ap.life--;
+        if (ap.life <= 0) acidParticles.splice(aIdx, 1);
+      });
+
+      // Multi-nucleated Osteoclast giant cell
+      ctx.fillStyle = isHypo ? '#ea580c' : '#78350f';
+      ctx.strokeStyle = '#fdba74';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(clastX, clastY, 24, 34, 0, 0, Math.PI * 2);
       ctx.fill();
       ctx.stroke();
 
       // Multiple nuclei inside osteoclast
-      ctx.fillStyle = "#fef3c7";
-      ctx.beginPath();
-      ctx.arc(oc.x + 25, oc.y + 26, 5, 0, Math.PI * 2);
-      ctx.arc(oc.x + 48, oc.y + 24, 6, 0, Math.PI * 2);
-      ctx.arc(oc.x + 70, oc.y + 28, 5, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = "#ffffff";
-      ctx.font = "bold 11px 'Plus Jakarta Sans'";
-      ctx.textAlign = "center";
-      ctx.fillText("OSTEOCLAST", oc.x + oc.w / 2, oc.y + 50);
-      ctx.font = "600 10px 'Plus Jakarta Sans'";
-      ctx.fillStyle = "#fde68a";
-      ctx.fillText("Bone Resorber", oc.x + oc.w / 2, oc.y + 64);
-
-      // Ruffled Border (Howship's Resorption Lacuna)
-      ctx.strokeStyle = osteoclastActivity > 0.5 ? "#fbbf24" : "#78350f";
-      ctx.lineWidth = 2.5;
-      ctx.beginPath();
-      const ruffX = oc.x + oc.w;
-      for (let j = 0; j < 7; j++) {
-        const ry1 = oc.y + 10 + j * 8;
-        const ry2 = ry1 + 4;
-        ctx.lineTo(ruffX + 7, ry1);
-        ctx.lineTo(ruffX, ry2);
-      }
-      ctx.stroke();
-
-      ctx.restore();
-    }
-
-    // 1. Circulating Calcium Ions (Ca²⁺)
-    function drawCalciumIons() {
-      ctx.save();
-      const b = LAYOUT.bloodstream;
-
-      const targetCount = Math.floor(bloodCalcium * 5);
-      while (caIons.length < targetCount) {
-        caIons.push({
-          x: b.x1 + 10 + Math.random() * (b.x2 - b.x1 - 20),
-          y: b.topY + 10 + Math.random() * (b.botY - b.topY - 20),
-          vx: (Math.random() - 0.5) * 0.9,
-          vy: 0.8 + Math.random() * 1.3,
-          radius: 3.5,
-          glow: 7
-        });
-      }
-      while (caIons.length > targetCount && caIons.length > 15) {
-        caIons.pop();
-      }
-
-      caIons.forEach(ion => {
-        ion.y += ion.vy * simSpeed;
-        ion.x += ion.vx * simSpeed;
-
-        if (ion.y > b.botY - 10) ion.y = b.topY + 10;
-        if (ion.y < b.topY + 10) ion.y = b.botY - 10;
-        if (ion.x > b.x2 - 10) ion.x = b.x1 + 10;
-        if (ion.x < b.x1 + 10) ion.x = b.x2 - 10;
-
-        ctx.shadowColor = "#38bdf8";
-        ctx.shadowBlur = ion.glow;
-        ctx.fillStyle = "#e0f2fe";
+      ctx.fillStyle = '#431407';
+      [[-6, -14], [4, -8], [-5, 6], [5, 14]].forEach(([nx, ny]) => {
         ctx.beginPath();
-        ctx.arc(ion.x, ion.y, ion.radius, 0, Math.PI * 2);
+        ctx.arc(clastX + nx, clastY + ny, 4, 0, Math.PI * 2);
         ctx.fill();
       });
 
-      ctx.restore();
+      // Active Ruffled Border (Undulating microvilli facing the bone surface)
+      ctx.strokeStyle = isHypo ? '#fca5a5' : '#94a3b8';
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      for (let i = -28; i <= 28; i += 4) {
+        const wave = Math.sin(clast.ruffledPhase + i) * (isHypo ? 5 : 1);
+        ctx.lineTo(clastX + 18 + wave, clastY + i);
+      }
+      ctx.stroke();
+
+      // Labeling Osteoclast
+      ctx.fillStyle = '#fed7aa';
+      ctx.font = 'bold 11px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('Osteoclast (Acid Resorber)', clastX - 30, clastY - 40);
+
+      // Releasing Ca²⁺ from the dissolved bone into the vascular sinusoid!
+      if (isHypo && Math.random() < 0.35) {
+        caParticles.push({
+          x: clastX / w,
+          y: (clastY + (Math.random() - 0.5) * 20) / h,
+          vx: -(0.003 + Math.random() * 0.003), // eject leftwards toward bloodstream
+          vy: (Math.random() - 0.5) * 0.002,
+          size: 3
+        });
+      }
     }
 
-    // 2. PTH Particles (Amber, Parathyroid -> Blood -> Osteoblasts)
-    function drawPthParticles() {
-      ctx.save();
-      for (let i = pthParticles.length - 1; i >= 0; i--) {
-        const p = pthParticles[i];
-        p.x += p.vx * 2.2 * simSpeed;
-        p.y += p.vy * simSpeed;
-        p.life -= 0.007 * simSpeed;
+    // Hormone emission & transport
+    function updateHormoneParticles(w, h, isHypo, isHyper) {
+      // Hypocalcemia emits PTH (amber) from parathyroid
+      if (isHypo && Math.random() < 0.25) {
+        pthParticles.push({
+          x: w * 0.16,
+          y: h * 0.28 + (Math.random() - 0.5) * 15,
+          vx: 2.2 + Math.random() * 1.5,
+          vy: (Math.random() - 0.5) * 0.8
+        });
+      }
 
-        if (p.x > LAYOUT.bloodstream.x2) {
-          p.vy = (LAYOUT.bone.osteoblast.y + 25 - p.y) * 0.05;
-        }
+      // Hypercalcemia emits Calcitonin (emerald) from thyroid C-cells
+      if (isHyper && Math.random() < 0.25) {
+        ctParticles.push({
+          x: w * 0.16,
+          y: h * 0.72 + (Math.random() - 0.5) * 15,
+          vx: 2.2 + Math.random() * 1.5,
+          vy: (Math.random() - 0.5) * 0.8
+        });
+      }
 
-        ctx.shadowColor = "#f59e0b";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = `rgba(251, 191, 36, ${p.life})`;
+      // Render PTH
+      pthParticles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        ctx.fillStyle = '#f59e0b';
         ctx.beginPath();
         ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.font = '8px sans-serif';
+        ctx.fillText('PTH', p.x, p.y - 5);
 
-        if (p.life > 0.35 && i % 2 === 0) {
-          ctx.fillStyle = `rgba(254, 243, 199, ${p.life})`;
-          ctx.font = "bold 9px 'JetBrains Mono'";
-          ctx.fillText("PTH", p.x + 6, p.y + 3);
-        }
+        if (p.x > w * 0.65) pthParticles.splice(idx, 1);
+      });
 
-        if (p.life <= 0 || p.x > LAYOUT.bone.osteoblast.x + 35) {
-          pthParticles.splice(i, 1);
-        }
-      }
-      ctx.restore();
-    }
-
-    // 3. Calcitonin Particles (Emerald, Thyroid -> Blood -> Osteoclasts)
-    function drawCalcitoninParticles() {
-      ctx.save();
-      for (let i = calcitoninParticles.length - 1; i >= 0; i--) {
-        const p = calcitoninParticles[i];
-        p.x += p.vx * 2.2 * simSpeed;
-        p.y += p.vy * simSpeed;
-        p.life -= 0.007 * simSpeed;
-
-        if (p.x > LAYOUT.bloodstream.x2) {
-          p.vy = (LAYOUT.bone.osteoclast.y + 35 - p.y) * 0.05;
-        }
-
-        ctx.shadowColor = "#10b981";
-        ctx.shadowBlur = 8;
-        ctx.fillStyle = `rgba(52, 211, 153, ${p.life})`;
+      // Render Calcitonin
+      ctParticles.forEach((p, idx) => {
+        p.x += p.vx;
+        p.y += p.vy;
+        ctx.fillStyle = '#10b981';
         ctx.beginPath();
         ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
         ctx.fill();
+        ctx.font = '8px sans-serif';
+        ctx.fillText('CT', p.x, p.y - 5);
 
-        if (p.life > 0.35 && i % 2 === 0) {
-          ctx.fillStyle = `rgba(209, 250, 229, ${p.life})`;
-          ctx.font = "bold 8px 'JetBrains Mono'";
-          ctx.fillText("CT", p.x + 6, p.y + 3);
-        }
-
-        if (p.life <= 0 || p.x > LAYOUT.bone.osteoclast.x + 35) {
-          calcitoninParticles.splice(i, 1);
-        }
-      }
-      ctx.restore();
+        if (p.x > w * 0.65) ctParticles.splice(idx, 1);
+      });
     }
 
-    // 4. Acid Spray into Howship's Lacuna & Liberated Ca²⁺ into Blood
-    function drawAcidLacuna() {
-      ctx.save();
-      for (let i = acidParticles.length - 1; i >= 0; i--) {
-        const a = acidParticles[i];
-        a.x += a.vx * simSpeed;
-        a.y += a.vy * simSpeed;
-        a.life -= 0.02 * simSpeed;
-
-        ctx.fillStyle = `rgba(250, 204, 21, ${a.life})`;
-        ctx.beginPath();
-        ctx.arc(a.x, a.y, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Liberate Calcium into blood when acid hits matrix
-        if (a.x >= LAYOUT.bone.matrixX && Math.random() < 0.28) {
-          caIons.push({
-            x: LAYOUT.bloodstream.x2 - 10,
-            y: LAYOUT.bone.osteoclast.y + 20 + Math.random() * 25,
-            vx: -1.5 - Math.random() * 0.9,
-            vy: (Math.random() - 0.5) * 0.8,
-            radius: 3.5,
-            glow: 8
-          });
-        }
-
-        if (a.life <= 0 || a.x > LAYOUT.bone.matrixX + 18) {
-          acidParticles.splice(i, 1);
-        }
-      }
-      ctx.restore();
-    }
-
-    // 5. Dynamic Circuit Flow Arrows
-    function drawDynamicCircuitArrows() {
-      ctx.save();
-      ctx.lineWidth = 1.5;
-
-      // PTH release arrow
-      if (pthLevel > 0.4) {
-        ctx.strokeStyle = "rgba(245, 158, 11, 0.7)";
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(LAYOUT.glands.parathyroid.x + 40, LAYOUT.glands.parathyroid.y);
-        ctx.lineTo(LAYOUT.bloodstream.x1 + 25, LAYOUT.glands.parathyroid.y);
-        ctx.stroke();
-
-        ctx.fillStyle = "#fbbf24";
-        ctx.font = "bold 10px 'JetBrains Mono'";
-        ctx.fillText("PTH Release →", LAYOUT.glands.parathyroid.x + 65, LAYOUT.glands.parathyroid.y - 8);
-      }
-
-      // Calcitonin release arrow
-      if (calcitoninLevel > 0.3) {
-        ctx.strokeStyle = "rgba(16, 185, 129, 0.7)";
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(LAYOUT.glands.thyroidC.x + 40, LAYOUT.glands.thyroidC.y);
-        ctx.lineTo(LAYOUT.bloodstream.x1 + 25, LAYOUT.glands.thyroidC.y);
-        ctx.stroke();
-
-        ctx.fillStyle = "#34d399";
-        ctx.font = "bold 10px 'JetBrains Mono'";
-        ctx.fillText("Calcitonin Release →", LAYOUT.glands.thyroidC.x + 60, LAYOUT.glands.thyroidC.y - 8);
-      }
-
-      ctx.restore();
-    }
-
-    updatePhysiologicalState();
-    requestAnimationFrame(animate);
+    updateUI();
+    render();
   </script>
 </body>
 </html>
